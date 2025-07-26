@@ -229,9 +229,9 @@ def main():
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         best_acc = checkpoint.get('best_acc', 0.0)
         start_epoch = checkpoint.get('epoch', 0) + 1
-        print(f"🔁 Loaded checkpoint from epoch {start_epoch}, best accuracy: {best_acc:.4f}")
+        print(f"Loaded checkpoint from epoch {start_epoch}, best accuracy: {best_acc:.4f}")
     else:
-        print("🆕 No checkpoint found, starting from scratch.")
+        print("No checkpoint found, starting from scratch.")
 
     train_losses = []
     train_accs = []
@@ -287,7 +287,7 @@ def main():
                 'epoch': epoch,
                 'best_acc': best_acc
             }, 'checkpoint-16.pth')
-            print(f"✅ Best model saved with accuracy: {best_acc:.4f}")
+            print(f"Best model saved with accuracy: {best_acc:.4f}")
 
     draw(train_losses, train_accs, test_losses, test_accs, 'VIT-16-1')
 
