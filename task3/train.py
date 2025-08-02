@@ -53,7 +53,6 @@ def main():
     }, 'checkpoint-ddim-30.pth')
 
     print(loos_all)
-    print("OMG!")
     # gen_images(diff, model)
 
 if __name__=="__main__":
