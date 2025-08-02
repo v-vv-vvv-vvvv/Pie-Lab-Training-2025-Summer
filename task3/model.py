@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-# 时间编码：Positional Encoding 或 MLP 方式
+# 时间编码
 class TimeEmbedding(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -16,7 +16,7 @@ class TimeEmbedding(nn.Module):
         # 输入 t: (B,)
         return self.mlp(t[:, None].float())  # 输出 (B, dim)
 
-# 更强大的UNet模块（部分简化）
+
 class DownBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -31,7 +31,7 @@ class DownBlock(nn.Module):
         self.pool = nn.MaxPool2d(2)
 
     def forward(self, x):
-        return self.pool(self.block(x)), self.block(x)  # 下采样 + 保留跳连
+        return self.pool(self.block(x)), self.block(x)  # 下采样 + 跳连
 
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -77,7 +77,7 @@ class UNet(nn.Module):
         self.out = nn.Conv2d(base_channels, in_channels, 1)
 
     def forward(self, x, t, label):
-        # 处理时间与标签嵌入
+        # 处理时间与标签
         t_emb = self.time_mlp(t)            # (B, D)
         label_emb = self.label_emb(label)           # (B, D)
         cond = t_emb + label_emb                # (B, D)
@@ -134,14 +134,8 @@ class Diffusion:
     
     @torch.no_grad()
     def p_sample(self, x_t, t, label):
-        """
-        单步去噪
-        x_t: 当前的图像（含噪）
-        t: 当前时间步
-        """
         pred_noise = self.model(x_t, t, label)
 
-        # 计算均值项 μ_theta
         alpha_t = self.alphas[t][:, None, None, None]
         sqrt_alpha_t = torch.sqrt(alpha_t)
         sqrt_one_minus_ab = self.sqrt_one_minus_alphas_cumprod[t][:, None, None, None]
@@ -149,7 +143,7 @@ class Diffusion:
 
         mean = (1 / sqrt_alpha_t) * (x_t - (one_minus_alpha / sqrt_one_minus_ab) * pred_noise)
 
-        # 如果是最后一步，不加噪声
+        # 最后一步，不加噪声
         if t[0] == 0:
             return mean
         else:
@@ -159,10 +153,7 @@ class Diffusion:
 
     @torch.no_grad()
     def p_sample_loop(self, shape, device, label):
-        """
-        从纯噪声开始逐步生成图像
-        shape: 生成图像的形状 (B, C, H, W)
-        """
+
         x = torch.randn(shape, device=device)
         for t in reversed(range(self.T)):
             t_batch = torch.full((shape[0],), t, device=device, dtype=torch.long)
@@ -171,13 +162,6 @@ class Diffusion:
     
     @torch.no_grad()
     def ddim_sample(self, x_t, t, t_prev, label, eta=0.0):
-        """
-        DDIM 单步采样过程。
-        - x_t: 当前含噪图像
-        - t: 当前时间步
-        - t_prev: 前一个时间步（t-1）或者下一个要跳到的步
-        - eta: 控制采样的随机性，eta=0 表示确定性采样
-        """
         # 预测噪声
         pred_noise = self.model(x_t, t, label)
 
@@ -209,12 +193,6 @@ class Diffusion:
         return x_prev
 
     def ddim_sample_loop(self, shape, device, label, eta=0.0, ddim_steps=100):
-        """
-        DDIM 多步去噪采样过程。
-        - shape: 输出图像形状
-        - eta: 控制确定性或随机性
-        - ddim_steps: 使用的DDIM采样步数
-        """
         x = torch.randn(shape, device=device)
 
         # 使用线性间隔的时间步
